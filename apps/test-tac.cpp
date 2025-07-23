@@ -5,6 +5,7 @@
 #include "framework/symsim.h"
 #include "framework/ts.h"
 #include "smt-switch/boolector_factory.h"
+#include "timed-assertion-checker/timed_assertion_checker.h"
 
 using namespace wasim;
 using namespace smt;
@@ -25,6 +26,7 @@ int main() {
   std::cout << sts.trans()->to_string() << std::endl;
   
   /*------------------------------simulation--------------------------------*/
+  SymbolicSimulator sim(sts, solver);
   sim.init();
 
     // timed assertion
@@ -32,7 +34,7 @@ int main() {
 
   tac::TimedAssertionChecker test_tac(my_assertion, sts, sim, solver);
 
-  test_tac.sim_max_step("rst",true,"clk");
+  test_tac.sim_max_step("",true,"clk"); // (rst_sig_name, set_rst_to_0, clk_sig_name)
   test_tac.print_term_map();
   test_tac.make_assertion_term();
   test_tac.assert_formula();

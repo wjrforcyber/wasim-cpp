@@ -110,6 +110,7 @@ namespace wasim {
     NodeRef * make_constant(boost::python::object c, NodeType * ntype) ;
 
     protected:
+      friend struct Dut;
       smt::SmtSolver solver;
   }; // end of SolverRef
 
@@ -510,6 +511,7 @@ namespace wasim {
     friend struct StateRef;
     friend struct TransSys;
     friend struct Simsimulator;
+    friend struct Dut;
     smt::SmtSolver solver;
     smt::Term node;
 
@@ -1307,6 +1309,8 @@ namespace wasim {
     }
 
       friend struct Simsimulator;
+      friend struct Dut;
+
     protected:
       std::shared_ptr<TransitionSystem> sptr;
 
@@ -1474,6 +1478,8 @@ namespace wasim {
     /// get solver
     SolverRef * get_solver() const { return new SolverRef(sptr->get_solver()); }
 
+      friend struct Dut;
+      
     protected:
       std::shared_ptr<SymbolicSimulator> sptr;
   };
@@ -1483,6 +1489,94 @@ namespace wasim {
   /* TODO : TraverseBranchingNode */
 
   /* TODO : SymbolicTraverse */
+
+  /* picker api */
+  struct Dut{
+    Dut(const std::string & btorname) 
+      : ts(new TransSys(btorname)), 
+        simulator(new Simsimulator(ts.get())){
+          auto solver = simulator->get_solver();
+          auto prop_vec = ts->sptr->prop();
+          if (prop_vec.empty()) {
+            std::cout << "No property to check!" << std::endl;
+            // prop = solver->solver->make_term(true);
+            prop = std::make_shared<NodeRef>(solver->solver->make_term(true), solver->solver);
+          }
+          if (prop_vec.size() == 1){
+            prop = std::make_shared<NodeRef>(prop_vec.at(0), solver->solver);
+          }
+          else{
+            auto prop_term = prop_vec.at(0);
+            for (size_t idx = 1; idx < prop_vec.size() ; ++idx)
+              prop_term = solver->solver->make_term(smt::And, prop_term, prop_vec.at(idx));
+            prop = std::make_shared<NodeRef>(prop_term, solver->solver);
+          }
+        }
+
+    void init_value(const boost::python::dict & d) {
+      auto var_dict = simulator->convert(d);
+      simulator->init(var_dict);
+    }
+    
+    void input_value(const boost::python::dict & iv, const boost::python::list & asmpts) {
+      auto var_dict = simulator->convert(iv);
+      simulator->set_input(var_dict, asmpts);
+    }
+
+    void step() {
+      simulator->sim_one_step();
+    }
+
+    bool check_prop(){
+      auto cur_prop = simulator->interpret_state_expr_on_curr_frame(prop.get());
+      auto cur_prop_term = cur_prop->node;
+      std::cout << "property: " << cur_prop_term << std::endl;
+      std::vector<NodeRef*> assumption;
+      auto solver = simulator->get_solver();
+
+      for (const auto & a : simulator->sptr->all_assumptions()){
+        std::cout << "assumptions: " << a << std::endl;
+        assumption.push_back(new NodeRef(a, solver->solver));
+      }
+
+      solver->push();
+      for (const auto & a : assumption) {
+        solver->assert_formula(a);
+      }
+      solver->assert_formula(new NodeRef(solver->solver->make_term(smt::Not, cur_prop_term), solver->solver));
+      auto res = solver->check_sat();
+      solver->pop();
+      
+      if(res)
+        std::cout << "check prop result: assertion fail!" << std::endl;
+      else
+        std::cout << "check prop result: assertion pass!" << std::endl;
+
+      return (res==false); // unsat -> return 1
+    }
+
+    StateRef * get_curr_state(const boost::python::list & assumptions){
+      auto cur_state = simulator->get_curr_state(assumptions);
+      // std::cout << cur_state->get_sv();
+      // std::cout << s.print_assumptions();
+      return new StateRef(*cur_state);
+    }
+
+    void get_curr_state_info(){
+      auto cur_state = simulator->get_curr_state({});
+      auto sv = cur_state -> get_sv();
+      // for key in sv:
+      //   print(key, ":",sv[key])
+    }
+
+    protected:
+      std::shared_ptr<TransSys> ts;
+      std::shared_ptr<Simsimulator> simulator;
+
+      std::shared_ptr<NodeRef> prop;
+
+  };
+
 
 } // end namespace wasim
 
@@ -1763,5 +1857,13 @@ BOOST_PYTHON_MODULE(pywasim)
     .def("get_solver", &Simsimulator::get_solver, return_value_policy<manage_new_object>())
   ;
 
+  class_<Dut>("Dut", init<const std::string &>())
+    .def("init_value", &Dut::init_value)
+    .def("input_value", &Dut::input_value)
 
+    .def("step", &Dut::step)
+    .def("check_prop", &Dut::check_prop)
+    .def("get_curr_state", &Dut::get_curr_state, return_value_policy<manage_new_object>())
+    
+  ;
 }
