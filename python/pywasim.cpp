@@ -240,7 +240,22 @@ namespace wasim {
     }
 
     NodeRef* logicalAnd(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::And, smt::PrimOp::BVAnd, "and bv/bool", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::And, smt::PrimOp::BVAnd, "and bv/bool", right_node);
+        }
+
         return _binOp(smt::PrimOp::And, smt::PrimOp::BVAnd, "and bv/bool", other);
     }
 
@@ -255,7 +270,22 @@ namespace wasim {
     }
 
     NodeRef* logicalOr(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Or, smt::PrimOp::BVOr, "or bv/bool", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Or, smt::PrimOp::BVOr, "or bv/bool", right_node);
+        }
+
         return _binOp(smt::PrimOp::Or, smt::PrimOp::BVOr, "or bv/bool", other);
     }
 
@@ -270,7 +300,22 @@ namespace wasim {
     }
 
     NodeRef* logicalXor(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Xor, smt::PrimOp::BVXor, "xor bv/bool", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Xor, smt::PrimOp::BVXor, "xor bv/bool", right_node);
+        }
+
         return _binOp(smt::PrimOp::Xor, smt::PrimOp::BVXor, "xor bv/bool", other);
     }
 
@@ -286,7 +331,22 @@ namespace wasim {
 
     // add //
     NodeRef* add(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVAdd, "bvadd", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVAdd, "bvadd", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVAdd, "bvadd", other);
     }
 
@@ -302,7 +362,22 @@ namespace wasim {
 
     // sub //
     NodeRef* sub(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVSub, "bvsub", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVSub, "bvsub", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVSub, "bvsub", other);
     }
 
@@ -318,7 +393,22 @@ namespace wasim {
 
     // udiv //
     NodeRef* udiv(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUdiv, "bvudiv", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUdiv, "bvudiv", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVUdiv, "bvudiv", other);
     }
 
@@ -333,9 +423,24 @@ namespace wasim {
     }
 
     // urem //
-    NodeRef* urem(NodeRef* r)
-    {
-        return _binOp(smt::PrimOp::BVUrem, "bvurem", r);
+    NodeRef* urem(NodeRef* other)
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUrem, "bvurem", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUrem, "bvurem", right_node);
+        }
+
+        return _binOp(smt::PrimOp::BVUrem, "bvurem", other);
     }
 
     NodeRef* uremInt(int r)
@@ -382,7 +487,22 @@ namespace wasim {
 
     // mul //
     NodeRef* mul(NodeRef* other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVMul, "bvmul", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVMul, "bvmul", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVMul, "bvmul", other);
     }
 
@@ -398,7 +518,23 @@ namespace wasim {
 
     // eq/neq //
     NodeRef* eq(NodeRef * other) const
-    {
+    {   // if node and other node are different bit widths, it will error
+        // we need to concat the two nodes to the same bit width
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Equal, "equal", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Equal, "equal", right_node);
+        }
+
         return _binOp(smt::PrimOp::Equal, "equal", other);
     }
 
@@ -413,7 +549,22 @@ namespace wasim {
     }
 
     NodeRef* neq(NodeRef * other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Distinct, "distinct", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::Distinct, "distinct", right_node);
+        }
+
         return _binOp(smt::PrimOp::Distinct, "distinct", other);
     }
 
@@ -429,7 +580,22 @@ namespace wasim {
 
 
     NodeRef* ult(NodeRef * other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUlt, "bvult", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUlt, "bvult", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVUlt, "bvult", other);
     }
 
@@ -445,7 +611,22 @@ namespace wasim {
 
 
     NodeRef* ugt(NodeRef * other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUgt, "bvugt", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUgt, "bvugt", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVUgt, "bvugt", other);
     }
 
@@ -461,7 +642,22 @@ namespace wasim {
 
 
     NodeRef* ule(NodeRef * other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUle, "bvule", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUle, "bvule", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVUle, "bvule", other);
     }
 
@@ -477,7 +673,22 @@ namespace wasim {
 
 
     NodeRef* uge(NodeRef * other) const
-    {
+    {   
+        auto left_width = node->get_sort()->get_width();
+        auto right_width = other->node->get_sort()->get_width();
+        NodeRef * left_node = new NodeRef(*this);
+        NodeRef * right_node = new NodeRef(*other);
+
+        if (left_width > right_width) {
+          auto extend_width = left_width - right_width;
+          right_node = NodeRef::zero_extend(right_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUge, "bvuge", right_node);
+        } else if (left_width < right_width) {
+          auto extend_width = right_width - left_width;
+          left_node = NodeRef::zero_extend(left_node, static_cast<int>(extend_width));
+          return left_node->_binOp(smt::PrimOp::BVUge, "bvuge", right_node);
+        }
+
         return _binOp(smt::PrimOp::BVUge, "bvuge", other);
     }
 
@@ -500,6 +711,25 @@ namespace wasim {
     {
         return Extract_operator(this, hi, lo);
     }
+
+    NodeRef* getitem_dispatch( boost::python::object key){
+      if (boost::python::extract<int>(key).check()) {
+        int idx = boost::python::extract<int>(key);
+        return this->getItemInt(idx);
+      }
+      else if(boost::python::extract<boost::python::slice>(key).check()){
+        boost::python::slice s = boost::python::extract<boost::python::slice>(key);
+        int high = boost::python::extract<int>(s.start());
+        int low = boost::python::extract<int>(s.stop());
+        std::cout << "slice: " << high << " " << low << std::endl;
+        return this->slice(high, low);
+      }
+      else{
+        throw PyWASIMException(PyExc_AttributeError, "Index must be [x] or [x:y]");
+        return nullptr;
+      }
+    }
+
     NodeRef* read(NodeRef * addr) const 
     {
         return _binOp(smt::PrimOp::Select, "LOAD", addr);
@@ -1490,7 +1720,7 @@ namespace wasim {
 
   /* TODO : SymbolicTraverse */
 
-  /* picker api */
+  /* Dut picker api */
   struct Dut{
     Dut(const std::string & btorname) 
       : ts(new TransSys(btorname)), 
@@ -1502,7 +1732,7 @@ namespace wasim {
             // prop = solver->solver->make_term(true);
             prop = std::make_shared<NodeRef>(solver->solver->make_term(true), solver->solver);
           }
-          if (prop_vec.size() == 1){
+          else if(prop_vec.size() == 1){
             prop = std::make_shared<NodeRef>(prop_vec.at(0), solver->solver);
           }
           else{
@@ -1521,6 +1751,19 @@ namespace wasim {
     void input_value(const boost::python::dict & iv, const boost::python::list & asmpts) {
       auto var_dict = simulator->convert(iv);
       simulator->set_input(var_dict, asmpts);
+
+      boost::python::list items = var_dict.items();
+      for(ssize_t i = 0; i < len(items); ++i) {
+          boost::python::object key = items[i][0];
+          boost::python::object value = items[i][1];
+          boost::python::extract<NodeRef *> k(key);
+          boost::python::extract<NodeRef *> v(value);
+
+          if(k.check() && v.check())
+            cur_input_dict[k()->to_string()] = v();
+          else
+            throw PyWASIMException(PyExc_RuntimeError, "Expecting string -> noderef map in input_value");
+      }
     }
 
     void step() {
@@ -1548,25 +1791,53 @@ namespace wasim {
       solver->pop();
       
       if(res)
-        std::cout << "check prop result: assertion fail!" << std::endl;
+        std::cout << "check prop result: fail!" << std::endl;
       else
-        std::cout << "check prop result: assertion pass!" << std::endl;
+        std::cout << "check prop result: pass!" << std::endl;
 
       return (res==false); // unsat -> return 1
     }
 
     StateRef * get_curr_state(const boost::python::list & assumptions){
-      auto cur_state = simulator->get_curr_state(assumptions);
-      // std::cout << cur_state->get_sv();
-      // std::cout << s.print_assumptions();
-      return new StateRef(*cur_state);
+      return simulator->get_curr_state(assumptions);
     }
 
-    void get_curr_state_info(){
-      auto cur_state = simulator->get_curr_state({});
-      auto sv = cur_state -> get_sv();
-      // for key in sv:
-      //   print(key, ":",sv[key])
+    bool check_assertion(NodeRef * assertion) {
+      auto solver = simulator->get_solver();
+      auto assertion_term = assertion->node;
+      std::cout << "assertion: " << assertion->to_string() << std::endl;
+
+      solver->push();
+      solver->assert_formula(new NodeRef(solver->solver->make_term(smt::Not, assertion_term), solver->solver));
+      auto res = solver->check_sat();
+      solver->pop();
+      
+      if(res)
+        std::cout << "check assertion result: fail!" << std::endl;
+      else
+        std::cout << "check assertion result: pass!" << std::endl;
+
+      return (res==false); // unsat -> return 1
+    }
+
+    void print_curr_sv(){
+      simulator->print_current_step();
+    }
+
+    NodeRef* getattr(const std::string& signal_name) {
+      if(cur_input_dict.has_key(signal_name)) {
+        auto input_signal_nr = boost::python::extract<NodeRef *>(cur_input_dict[signal_name]);
+        return new NodeRef(*input_signal_nr());
+      }
+      else{
+        try{
+          auto signal_nr = simulator->var(signal_name);
+          return simulator->interpret_state_expr_on_curr_frame(signal_nr);
+        }
+        catch (const std::exception& e) {
+          throw PyWASIMException(PyExc_AttributeError, "No such signal: " + signal_name);
+        }
+      }
     }
 
     protected:
@@ -1575,6 +1846,7 @@ namespace wasim {
 
       std::shared_ptr<NodeRef> prop;
 
+      boost::python::dict cur_input_dict;
   };
 
 
@@ -1650,10 +1922,10 @@ BOOST_PYTHON_MODULE(pywasim)
            return_value_policy<manage_new_object>())
       .def("__rmul__", &NodeRef::rmulInt,
            return_value_policy<manage_new_object>())
-      .def("__div__", &NodeRef::udiv, return_value_policy<manage_new_object>())
-      .def("__div__", &NodeRef::udivInt,
+      .def("__truediv__", &NodeRef::udiv, return_value_policy<manage_new_object>())
+      .def("__truediv__", &NodeRef::udivInt,
            return_value_policy<manage_new_object>())
-      .def("__rdiv__", &NodeRef::rudivInt,
+      .def("__rtruediv__", &NodeRef::rudivInt,
            return_value_policy<manage_new_object>())
       .def("__mod__", &NodeRef::urem, return_value_policy<manage_new_object>())
       .def("__mod__", &NodeRef::uremInt,
@@ -1688,11 +1960,12 @@ BOOST_PYTHON_MODULE(pywasim)
       .def("__ge__", &NodeRef::ugeInt, return_value_policy<manage_new_object>())
 
       // slice operator
-      .def("__getslice__", &NodeRef::slice,
-           return_value_policy<manage_new_object>())
-      // get bit operator
-      .def("__getitem__", &NodeRef::getItemInt,
-           return_value_policy<manage_new_object>())
+      .def("__getitem__", &NodeRef::getitem_dispatch, return_value_policy<manage_new_object>())
+      // .def("__getitem__", &NodeRef::slice,
+      //      return_value_policy<manage_new_object>())
+      // // get bit operator
+      // .def("__getitem__", &NodeRef::getItemInt,
+      //      return_value_policy<manage_new_object>())
   ;
 
   def("is_sat", &NodeRef::is_sat);
@@ -1863,7 +2136,11 @@ BOOST_PYTHON_MODULE(pywasim)
 
     .def("step", &Dut::step)
     .def("check_prop", &Dut::check_prop)
+    .def("check_assertion", &Dut::check_assertion)
+    .def("print_curr_sv", &Dut::print_curr_sv)
     .def("get_curr_state", &Dut::get_curr_state, return_value_policy<manage_new_object>())
+
+    .def("__getattr__", &Dut::getattr, return_value_policy<manage_new_object>())
     
   ;
 }
