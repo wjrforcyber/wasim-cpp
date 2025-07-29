@@ -14,17 +14,16 @@ if __name__ == "__main__":
 
     # init dut
     dut.init_value({})                                                                      # init state value
-    dut.input_value({'a': "a0_symbol", 'b': "b0_symbol", 'c': "c0_symbol", 'rst':1}, [])    # set value to input
-
     dut.print_curr_sv()
 
+    # next cycle
+    dut.input_value({'a': "a1_symbol", 'b': "b1_symbol", 'c': "c1_symbol", 'rst':1}, [])    # set value to input
+    dut.step()                                                                              # sim one step
+    dut.print_curr_sv()
     dut.check_prop()                                                                        # check property
 
     # next cycle
-    dut.step()                                                                              # sim one step
-    dut.input_value({'a': "a1_symbol", 'b': "b1_symbol", 'c': "c1_symbol", 'rst':0}, [])
-
+    dut.input_value({'a': "a2_symbol", 'b': "b2_symbol", 'c': "c2_symbol", 'rst':0}, [])
+    dut.step()
     dut.print_curr_sv()
-
     dut.check_assertion(dut.d1 == dut.d2) 
-

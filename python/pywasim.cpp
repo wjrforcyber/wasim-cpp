@@ -1759,8 +1759,10 @@ namespace wasim {
           boost::python::extract<NodeRef *> k(key);
           boost::python::extract<NodeRef *> v(value);
 
-          if(k.check() && v.check())
+          if(k.check() && v.check()){
             cur_input_dict[k()->to_string()] = v();
+            std::cout << "input_value: " << k()->to_string() << " -> " << v()->to_string() << std::endl;
+          }
           else
             throw PyWASIMException(PyExc_RuntimeError, "Expecting string -> noderef map in input_value");
       }

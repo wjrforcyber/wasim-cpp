@@ -13,16 +13,15 @@ import pywasim
 
 
 async def simple_test(dut):
+    # init
     clk = Clock(0, 20, units='ns')
     dut.init_value({})
-    dut.input_value({'a': "symbol_a0", 'b': "symbol_b0"}, [])                               # set value to input
     dut.print_curr_sv()
 
-    asyncio.create_task(clk.start())                                                        # start clock
-    await RisingEdge(clk)                                                             # synchronize clock
-    dut.step()
-    dut.print_curr_sv()
+    # run clk
+    asyncio.create_task(clk.start())                                                        # start 
 
+    # run step
     for cycle in range(1, 5):
         dut.input_value({'a': "symbol_a" + str(cycle), 'b': "symbol_b" + str(cycle)}, [])
         await RisingEdge(clk)
