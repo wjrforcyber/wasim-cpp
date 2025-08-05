@@ -1,29 +1,26 @@
-import os
-import sys
-
-script_path = os.path.realpath(__file__)
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
-build_dir = os.path.join(parent_dir, 'build')
-sys.path.append(build_dir)
-
+from wasim_dut import Dut
 import pywasim
 
 
 if __name__ == "__main__":
-    dut = pywasim.Dut('pipe.btor2')                                                         # create dut
+    dut = Dut('pipe.btor2')     # create dut
 
     # init dut
-    dut.init_value({})                                                                      # init state value
+    dut.init_value({})          # init state value
+    dut.print_curr_sv()         # print current state value
+    
+    # next cycle
+    dut.a.value = "a1"          # set input value
+    dut.b.value = "b1"
+    dut.rst.value = 1
+    dut.step()                  # sim one step
     dut.print_curr_sv()
+    dut.check_prop()            # check property
 
     # next cycle
-    dut.input_value({'a': "a1_symbol", 'b': "b1_symbol", 'c': "c1_symbol", 'rst':1}, [])    # set value to input
-    dut.step()                                                                              # sim one step
-    dut.print_curr_sv()
-    dut.check_prop()                                                                        # check property
-
-    # next cycle
-    dut.input_value({'a': "a2_symbol", 'b': "b2_symbol", 'c': "c2_symbol", 'rst':0}, [])
+    dut.a.value = "a2"
+    dut.b.value = "b2"
+    dut.rst.value = 0
     dut.step()
     dut.print_curr_sv()
-    dut.check_assertion(dut.d1 == dut.d2) 
+    dut.check_prop()

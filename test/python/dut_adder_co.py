@@ -1,14 +1,5 @@
-import os
-import sys
-
-import asyncio
 from copywasim import *
-
-script_path = os.path.realpath(__file__)
-parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
-build_dir = os.path.join(parent_dir, 'build')
-sys.path.append(build_dir)
-
+from wasim_dut import Dut
 import pywasim
 
 
@@ -19,19 +10,22 @@ async def simple_test(dut):
     dut.print_curr_sv()
 
     # run clk
-    asyncio.create_task(clk.start())                                                        # start 
+    asyncio.create_task(clk.start())            # start 
 
     # run step
     for cycle in range(1, 5):
-        dut.input_value({'a': "symbol_a" + str(cycle), 'b': "symbol_b" + str(cycle)}, [])
-        await RisingEdge(clk)
-        dut.step()
+        dut.a.value = "a" + str(cycle)          # set input value
+        dut.b.value = "b" + str(cycle)
+        await RisingEdge(clk)                   # wait for rising edge
+        dut.step()                              # sim one step
+
         dut.print_curr_sv()
-        dut.check_assertion(dut.out == dut.a)
+        dut.check_assertion(dut.a.value == dut.b.value)
+        # await FallingEdge(clk)                # wait for falling edge
 
 
 if __name__ == "__main__":
-    dut = pywasim.Dut('adder.btor2')                                                        # create dut
-    asyncio.run(simple_test(dut))                                                           # Run the test asynchronously
+    dut = Dut('adder.btor2')            # create dut
+    asyncio.run(simple_test(dut))       # run the test asynchronously
 
     
