@@ -41,13 +41,13 @@ smt::Term SymbolicSimulator::cur(const std::string & n) const
   smt::Term expr = var(n);
   if (!_expr_only_sv(expr)) {
     assert(history_choice_.size() != 0);
-    assert(!history_choice_.back().UsedInSim_);
+    assert(history_choice_.back().UsedInSim_);
     smt::UnorderedTermMap iv_mapping = history_choice_.back().var_assign_;
     auto subs_mapping = sv_mapping;  // make a copy
     subs_mapping.insert(iv_mapping.begin(), iv_mapping.end());
-    smt::Term expr = solver_->substitute(expr, subs_mapping);
+    expr = solver_->substitute(expr, subs_mapping);
   } else {
-    smt::Term expr = solver_->substitute(expr, sv_mapping);
+    expr = solver_->substitute(expr, sv_mapping);
   }
   return expr;
 }

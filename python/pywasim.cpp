@@ -509,7 +509,6 @@ namespace wasim {
         boost::python::slice s = boost::python::extract<boost::python::slice>(key);
         int high = boost::python::extract<int>(s.start());
         int low = boost::python::extract<int>(s.stop());
-        std::cout << "slice: " << high << " " << low << std::endl;
         return this->slice(high, low);
       }
       else{

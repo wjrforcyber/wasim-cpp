@@ -15,7 +15,6 @@ class Dut:
         self.solver = self.simulator.get_solver()
 
         self.iv_dict = {}
-        self.iv_term_dict = {}
         self.prop = self._get_property()
 
 
@@ -45,8 +44,12 @@ class Dut:
         self.simulator.set_input(var_dict, [])
         self.simulator.sim_one_step()
 
-        # update iv_term_dict with current input
-        self.iv_term_dict = var_dict
+    def back_step(self):
+        self.simulator.backtrack()
+        self.simulator.undo_set_input()
+
+    def step_cycle(self):
+        return self.simulator.tracelen()
 
     def check_prop(self):
         cur_prop = self.simulator.interpret_state_expr_on_curr_frame(self.prop)
@@ -87,6 +90,9 @@ class Dut:
     def print_curr_sv(self):
         self.simulator.print_current_step()
 
+    def print_curr_assumptions(self):
+        self.simulator.print_current_step_assumptions()
+
     def __getattr__(self, signal_name):
         return SignalProxy(self, signal_name)
 
@@ -100,15 +106,10 @@ class SignalProxy:
     def value(self):
         # get current term of signal
         try:
-            signal_nr = self.dut.simulator.var(self.name)
+            signal_nr = self.dut.simulator.cur(self.name)
+            return signal_nr
         except Exception as e:
             raise ValueError(f"Cannot get value of signal '{self.name}': {e}")
-        
-        if signal_nr in self.dut.iv_term_dict:
-            return self.dut.iv_term_dict[signal_nr]
-        else:
-            val = self.dut.simulator.interpret_state_expr_on_curr_frame(signal_nr)
-            return val
 
     @value.setter
     def value(self, iv):
