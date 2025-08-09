@@ -1504,7 +1504,7 @@ namespace wasim {
 
 } // end namespace wasim
 
-BOOST_PYTHON_MODULE(pywasim)
+BOOST_PYTHON_MODULE(pywasimbase)
 {
   using namespace boost::python;
   using namespace wasim;

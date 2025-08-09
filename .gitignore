@@ -37,6 +37,7 @@ python/deprecated/*
 build/*
 deps/*
 __pycache__/*
+test/python/__pycache__/*
 
 output/
 

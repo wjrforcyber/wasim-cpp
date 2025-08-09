@@ -1,1 +1,1 @@
-from .pywasim import *
+from .pywasimbase import *

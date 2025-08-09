@@ -1,5 +1,4 @@
-from wasim_dut import Dut
-import pywasim
+from pywasim import Dut
 
 
 if __name__ == "__main__":

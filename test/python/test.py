@@ -6,8 +6,8 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
 build_dir = os.path.join(parent_dir, 'build')
 sys.path.append(build_dir)
 
-import pywasim
-ts = pywasim.TransSys('pipe.btor2')
+import pywasimbase
+ts = pywasimbase.TransSys('pipe.btor2')
 updates = ts.state_updates()
 for s,e in updates.items():
   print(s,e.to_string())

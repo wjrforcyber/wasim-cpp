@@ -1,5 +1,4 @@
-from wasim_dut import Dut
-import pywasim
+from pywasim import Dut, zero_extend
 
 
 if __name__ == "__main__":
@@ -27,5 +26,5 @@ if __name__ == "__main__":
     out1 = dut.out.value
 
     # assert
-    dut.check_assertion(out1 == pywasim.zero_extend(a0, 1) + pywasim.zero_extend(b1, 1))
+    dut.check_assertion(out1 == zero_extend(a0, 1) + zero_extend(b1, 1))
     

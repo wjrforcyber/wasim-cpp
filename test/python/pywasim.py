@@ -6,12 +6,13 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(script_path)))
 build_dir = os.path.join(parent_dir, 'build')
 sys.path.append(build_dir)
 
-import pywasim
+from pywasimbase import *
+# TransSys, Simsimulator
 
 class Dut:
     def __init__(self, btorname):
-        self.ts = pywasim.TransSys(btorname)
-        self.simulator = pywasim.Simsimulator(self.ts)
+        self.ts = TransSys(btorname)
+        self.simulator = Simsimulator(self.ts)
         self.solver = self.simulator.get_solver()
 
         self.iv_dict = {}
