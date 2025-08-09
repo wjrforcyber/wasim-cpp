@@ -1492,7 +1492,11 @@ namespace wasim {
 
     /// a shortcut to create a variable
     NodeRef * set_var(int bitwdth, const std::string & vname) {
-      return new NodeRef(sptr->set_var(bitwdth, vname), sptr->get_solver());
+      try {
+        return new NodeRef(sptr->set_var(bitwdth, vname), sptr->get_solver());
+      } catch(...) {
+        throw PyWASIMException(PyExc_RuntimeError, "Variable name `" + vname + "` already exists");
+      }
     }
 
     /// get solver

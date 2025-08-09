@@ -95,7 +95,15 @@ class Dut:
         self.simulator.print_current_step_assumptions()
 
     def __getattr__(self, signal_name):
+        self.ts.lookup(signal_name) # add a check to make sure the signal_name do exist
         return SignalProxy(self, signal_name)
+    
+    def get_signal(self, signal_name):
+        # just in case some signals have the same name as the class method
+        # you can still use this function to get it
+        self.ts.lookup(signal_name)
+        return SignalProxy(self, signal_name)
+    
 
 
 class SignalProxy:
@@ -105,6 +113,9 @@ class SignalProxy:
 
     @property
     def value(self):
+        # if you have assigned, get the one you assigned
+        if self.name in self.dut.iv_dict:
+            return self.dut.iv_dict[self.name]
         # get current term of signal
         try:
             signal_nr = self.dut.simulator.cur(self.name)
@@ -123,4 +134,10 @@ class SignalProxy:
                 raise ValueError(f"No such input variable '{self.name}'.")
         except Exception as e:
             raise ValueError(f"No such variable '{self.name}'.", e)
+            
+    def unset(self):
+        if self.name not in self.dut.iv_dict:
+            raise ValueError(f"No such assignment to variable '{self.name}'.")
+        del self.dut.iv_dict[self.name]
+        
 

@@ -11,6 +11,10 @@ if __name__ == "__main__":
     # next cycle
     dut.a.value = "a1"          # set input value
     dut.b.value = "b1"
+    print(dut.a.value)
+    dut.a.unset()
+    dut.a.value = "anew"        # set input value
+    # print(dut.f)              # this should raise an error
     dut.step()                  # sim one step
     dut.print_curr_sv()
 

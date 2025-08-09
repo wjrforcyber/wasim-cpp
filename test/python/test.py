@@ -28,3 +28,11 @@ print (init_constant)
 init_constant2 = ts2.init_constants()
 print (init_constant2)
 
+sim = pywasimbase.Symsimulator(ts)
+v1 = sim.set_var(8, 'v1')
+print(v1)
+v2 = sim.set_var(8, 'v2')
+print(v1 + v2)
+
+
+
