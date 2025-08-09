@@ -25,4 +25,6 @@ print (prop_prev)
 
 init_constant = ts.init_constants()
 print (init_constant)
+init_constant2 = ts2.init_constants()
+print (init_constant2)
 
