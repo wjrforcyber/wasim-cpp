@@ -12,7 +12,7 @@ from pywasimbase import *
 class Dut:
     def __init__(self, btorname):
         self.ts = TransSys(btorname)
-        self.simulator = Simsimulator(self.ts)
+        self.simulator = Symsimulator(self.ts)
         self.solver = self.simulator.get_solver()
 
         self.iv_dict = {}
