@@ -68,9 +68,7 @@ bool SymbolicSimulator::_expr_only_sv(const smt::Term & expr) const
   smt::get_free_symbols(expr, var_set);
 
   for (const auto & v : var_set) {
-    if (svar_.find(v) != svar_.end())
-      return true;
-    else
+    if (svar_.find(v) == svar_.end())
       return false;
   }
   // if there is no variable, then it is also only sv
@@ -102,6 +100,9 @@ smt::UnorderedTermMap SymbolicSimulator::convert(
 
       auto value_new = solver_->make_term(value_int, key_sort);
       retdict.emplace(key_new, value_new);
+    } else if (std::holds_alternative<smt::Term>(value)) {
+      auto value_term = std::get<smt::Term>(value);
+      retdict.emplace(key_new, value_term);
     } else
       throw SimulatorException("Unhandled case in assignment_type");
   }
@@ -116,6 +117,23 @@ void SymbolicSimulator::backtrack()
   history_assumptions_interp_.pop_back();
   history_choice_.back().UsedInSim_ = false;
 }
+
+void SymbolicSimulator::free_init(const smt::UnorderedTermMap & var_assignment) {
+  trace_.push_back(var_assignment);
+  auto & var_assignment_ref = trace_.back();
+  for (const auto & v : svar_) {
+    if (var_assignment_ref.find(v) == var_assignment_ref.end()) {
+      var_assignment_ref[v] =
+          new_var(v->get_sort()->get_width(), v->to_string(), false);
+    }
+  }
+  if (!_expr_only_sv(ts_.init()))
+    throw SimulatorException("init condition contains non state var");
+  
+  history_assumptions_.push_back({ });
+  history_assumptions_interp_.push_back({ });
+  // this will not assumptions
+} // end free_init
 
 void SymbolicSimulator::init(
     const smt::UnorderedTermMap & var_assignment /*={}*/)
@@ -133,7 +151,8 @@ void SymbolicSimulator::init(
   // make sure the init constraint only contains state variables
   // you cannot constrain input variables in the initial state
   // btorparser will help convert the TS to avoid this
-  _expr_only_sv(ts_.init());
+  if (!_expr_only_sv(ts_.init()))
+    throw SimulatorException("init condition contains non state var");
 
   auto init_constr = solver_->substitute(ts_.init(), var_assignment_ref);
   history_assumptions_.push_back({ init_constr });
@@ -188,6 +207,9 @@ void SymbolicSimulator::print_current_step_assumptions() const
 void SymbolicSimulator::set_input(const smt::UnorderedTermMap & invar_assign,
                                  const smt::TermVec & pre_assumptions)
 {
+  if (trace_.empty())
+    throw SimulatorException("Simulator.init should be called before set_input");
+
   if (history_choice_.size() != 0) {
     history_choice_.back().CheckSimed();
   }
@@ -347,9 +369,11 @@ StateAsmpt SymbolicSimulator::get_curr_state(const smt::TermVec & assumptions)
 
 smt::Term SymbolicSimulator::set_var(int bitwdth, std::string vname /*= "var"*/)
 {
-  auto symb_sort = solver_->make_sort(smt::BV, bitwdth);
+  if (bitwdth < 0)
+    throw SimulatorException("bitwidth cannot be negative");
+  auto symb_sort = bitwdth > 0 ? solver_->make_sort(smt::BV, bitwdth) : solver_->make_sort(smt::BOOL);
   auto symb = solver_->make_symbol(vname, symb_sort);
-  return symb;
+  return symb;  
 }
 
 }  // namespace wasim

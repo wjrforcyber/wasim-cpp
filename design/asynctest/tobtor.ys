@@ -1,0 +1,7 @@
+read_verilog -formal mul.v
+prep -top mul
+flatten
+memory -nomap
+hierarchy -check
+setundef -undriven -init -expose
+write_btor  -s mul.btor2

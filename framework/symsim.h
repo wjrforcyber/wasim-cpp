@@ -25,7 +25,7 @@
 namespace wasim {
 
 /// std::string : a symbolic value, int : a concrete value
-typedef std::variant<int, std::string> value_type;
+typedef std::variant<int, std::string, smt::Term> value_type;
 /// from string (variable name) to value
 typedef std::map<std::string, value_type> assignment_type;
 
@@ -118,6 +118,8 @@ class SymbolicSimulator
   void backtrack();
   /// use the given variable assignment to initialize
   void init(const smt::UnorderedTermMap & var_assignment = {});
+  /// use the given variable assignment, but does not use init condition
+  void free_init(const smt::UnorderedTermMap & var_assignment = {});
   /// re-assign the current state
   void set_current_state(const StateAsmpt & s);
   /// set the input variable values before simulating next step

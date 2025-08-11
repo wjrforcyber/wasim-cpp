@@ -23,7 +23,9 @@ class Dut:
         
         self._do_not_interpret_var = False # if true, will not return SignalProxy
         self.iv_dict = {}
-        self.prop = self._get_property()
+
+        self.initialized = False
+        # self.prop = self._get_property()
 
 
     def _get_property(self):
@@ -42,15 +44,26 @@ class Dut:
             print("property:", prop_i)
             return prop_i
 
-    def init_value(self, d):
+    def set_init(self, d = {}):
+        if self.initialized:
+            raise RuntimeError("You cannot initialize simulator twice");
+        self.initialized = True
         var_dict = self.simulator.convert(d)
         self.simulator.init(var_dict)
+
+    def free_init(self, d = {}):
+        if self.initialized:
+            raise RuntimeError("You cannot initialize simulator twice");
+        self.initialized = True
+        var_dict = self.simulator.convert(d)
+        self.simulator.free_init(var_dict)
 
     def step(self):
         var_dict = self.simulator.convert(self.iv_dict)
         self.iv_dict = {}
         self.simulator.set_input(var_dict, [])
         self.simulator.sim_one_step()
+        print (f'<cycle:{self.step_cycle()-1}>')
 
     def back_step(self):
         self.simulator.backtrack()
@@ -79,6 +92,13 @@ class Dut:
         else:
             print("check prop result: pass!")
         return not res  # unsat -> return True
+
+    def check_sat(self, asst, asmpts):
+        print('dut.check_sat')
+        asmpts_all = self.simulator.all_assumptions()
+        asmpts_all.extend(asmpts)
+        asmpts_all.append(asst)
+        return self.solver.check_sat_assuming(asmpts_all)
 
     def check_assertion(self, assertion):
         print(f"assertion: {assertion.to_string()}")
@@ -124,7 +144,7 @@ class VarProxy:
         self.var = var  # example: "a"
     @property
     def value(self):
-        return v
+        return self.var
         
     @value.setter
     def value(self, iv):
@@ -172,12 +192,34 @@ class async_simulator(object):
     def __init__(self, dut):
         self._state_ptr = None # should point to a pywasim_local_state object
         self.dut = dut
+        self.finished = False
+    def get_var(self, name):
+        return self.dut.simulator.get_var(name)
+    def set_var(self, name, width:int):
+        return self.dut.simulator.set_var(width, name)
+
+    def check_valid(self, expr):
+        assert (self._state_ptr)
+        print('<solver call>')
+        can_sat = self.dut.check_sat(~expr, self._state_ptr.branch_cond)
+        print('<end solver call>')
+        if can_sat:
+            # the behavior here should be controllable
+            # it should also be debuggable
+            # maybe dump waveform
+            raise AssertionError('check_valid failed')
+            print("check_valid failed")
+            return False
+        print("check_valid pass")
+        return True        
         
     def _set_stateptr(self, ptr):
         self._state_ptr = ptr
         
     # branch condition?
-        
+    def finish(self):
+        self.finished = True
+
     def wait_cycle(self, num:int = 1):
         assert(self._state_ptr)
         assert(num > 0)
@@ -204,7 +246,7 @@ class async_simulator(object):
         
 
 class await_condition(object):
-    def __init__(self, cycle = -1, cond = None, execthread = None):
+    def __init__(self, cycle = 0, cond = None, execthread = None):
         self.cycle = cycle
         self.cond = cond
         self.execthread = execthread
@@ -222,7 +264,7 @@ class pywasim_local_state(object):
         self.await_cond = None  # await condition could be clock(n)
         self.branch_cond = []
         
-    def clone(self):
+    def clone(self): # it returns a passthrough object
         ret = pywasim_local_state(self.coroutine, [], {}) # you don't need to clone args and kwargs because it will not branch at invocation
         ret.pc = self.pc
         ret.finished = self.finished
@@ -231,33 +273,39 @@ class pywasim_local_state(object):
         # this is because when you branch, one thread will have its await set to None to let it continue
         ret.local = self.local.copy()
         ret.branch_cond = self.branch_cond.copy()
+        return ret
         
     def return_value(self):
         return self.retval
     
     def step(self):
         if self.finished:
+            print ('<coroutine finished>')
             return
-        if pc >= len(self.coroutine.funbody):
+        if self.pc >= len(self.coroutine.funbody):
+            print ('<coroutine finished>')
             self.finished = True
             return
                     
+        print(f'<coroutine.pc:{self.pc}>')
         self.local['sim']._set_stateptr(self)
         if isinstance(self.coroutine.funbody[self.pc], ast.Expr):
             expr = self.coroutine.funbody[self.pc]
             if isinstance(expr.value, ast.Call):
-                if isinstance(expr.value.func, ast.Attribute) and expr.value.func.value.id == 'sim' and expr.value.func.attr='wait_cond':
+                if isinstance(expr.value.func, ast.Attribute) and expr.value.func.value.id == 'sim' and expr.value.func.attr == 'wait_cond':
                     # in sim.wait_cond(...), you should not immediately
                     # interpret variables
                     self.local['sim'].dut._do_not_interpret_var = True
         
         if isinstance(self.coroutine.funbody[self.pc], ast.Return):
             ret = self.coroutine.funbody[self.pc]
-            self.retval = eval(ret.value, locals = self.local)
+            self.retval = eval(ret.value, {},  self.local)
+            print ('<coroutine finished>')
             self.finished = True
         else:
             # sim.await will set await_cond
-            exec(self.coroutine.funbody[self.pc], locals = self.local)
+            tmp_stmt = ast.Module(body=[self.coroutine.funbody[self.pc]], type_ignores=[])
+            exec(compile(tmp_stmt, "<ast>", "exec"), {}, self.local)
             
         self.local['sim']._set_stateptr(None)
         self.local['sim'].dut._do_not_interpret_var = False
@@ -275,7 +323,7 @@ class pywasim_local_state(object):
         # and create branches as you see fit
         #
         # currently you can write it as
-        #     if sim.is_sat(dut.a.value == 0):
+        #     if sim.check_sat(dut.a.value == 0):
         #        ...
         #
         # but this does not create execution branches
@@ -283,10 +331,7 @@ class pywasim_local_state(object):
     def parse_arg(self):
         assert (self.pc < 0 and not self.finished)
         # parse its args, set the local variables
-        code = self.coroutine.lines
-        assert (code[0].strip()[0] == '@')
-        assert (code[1].strip()[0:3] == 'def')
-        func_node = ast.parse(code[1]).body[0]
+        func_node = self.coroutine.astnodes.body[0]
         assert isinstance(func_node, ast.FunctionDef)
         args = [arg.arg for arg in func_node.args.args]
         idx = 0
@@ -333,55 +378,91 @@ def register_task(func):
         _all_coroutine[l-1].invoke(*args, **kwargs)
     return wrapper # this is used to register the args
     
-def start_loop(sim, dut):
+def start_loop(sim, dut, bound = -1):
+    if len(_all_states) == 0:
+        return
+
+    if sim.dut is not dut:
+        raise RuntimeError("Simulator and DUT do not match")
+
+    if not dut.initialized:
+        raise RuntimeError("Simulator has not been initialized")
+    curr_step = 0
+    while bound < 0 or curr_step < bound:
+        if sim.finished:
+            break
+        async_one_step(sim, dut)
+        curr_step += 1
+
+
+def async_one_step(sim, dut):
     if len(_all_states) == 0:
         return
         
     any_runnable = True
+    all_finished = True
+
     while any_runnable:
         any_runnable = False
-        for st in _all_states:  # list of pywasim_local_state
+        for idx,st in enumerate(_all_states):  # list of pywasim_local_state
+            print(f'<coroutine #{idx}>')
+            if st.finished:
+                continue
+            #else
+            all_finished = False
+
             if st.pc < 0:
                 # parse its args, set the local variables
                 st.parse_arg()
-            if st.await_cond is not None:
+            if st.await_cond is not None and st.await_cond.execthread is not None:
               # if the task it waits has finished
               # we can remove its blocker so that it can continue
               if st.await_cond.execthread.finished:
                 st.await_cond = None
                 
             # execute the corountine until we need to wait
-            while st.await_cond is None:
+            while st.await_cond is None and not st.finished:
                 st.step()
                 any_runnable = True
-                
+
+    if all_finished:
+        print('<finished>')
+        sim.finish()
+        return
+
     # TODO: branch before step
+    print('<dut.step>')
     dut.step()
     # next go through _all_states and decrease cycle or check condition
-    for st in _all_states:
+    for idx,st in enumerate(_all_states):
+        print(f'<coroutine #{idx} post>')
         # assert (st.await_cond) # is not None
         # as we append passthrough to _all_states, its await_condition may be None 
         if st.await_cond is None:
             continue # just skip them
+        print (st.await_cond)
         if st.await_cond.cycle:
             st.await_cond.cycle -= 1
-            if st.await_cond.cycle == 0:
+            if st.await_cond.cycle <= 0:
                 st.await_cond = None # remove its blocker so it can continue
-        elif st.await_cond.cond:
+                continue
+        elif st.await_cond.cond is not None:
             # check if this condition can be true
             # check if this condition can be false
-            maybe_true = True # TODO FIXME
-            maybe_false = True
+            cond_curr = dut.simulator.interpret_state_expr_on_curr_frame(st.await_cond.cond)
+            maybe_true = dut.check_sat(cond_curr, st.branch_cond )
+            maybe_false = dut.check_sat(~cond_curr, st.branch_cond )
+            print('branch:',maybe_true, maybe_false)
             if maybe_true and not maybe_false:
                 st.await_cond = None
-                st.branch_cond.append(st.await_cond.cond)
+                st.branch_cond.append(cond_curr)
             elif maybe_false and not maybe_true:
-                st.branch_cond.append(~st.await_cond.cond)  # record this as false
+                st.branch_cond.append(~cond_curr)  # record this as false
             else:
                 assert(maybe_true and maybe_false)
                 passthrough = st.clone()
-                passthrough.branch_cond.append(st.await_cond.cond)
-                st.branch_cond.append(~st.await_cond.cond)
+                passthrough.branch_cond.append(cond_curr)
+                st.branch_cond.append(~cond_curr)
                 _all_states.append(passthrough)
                 
             

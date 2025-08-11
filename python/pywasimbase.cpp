@@ -1385,17 +1385,20 @@ namespace wasim {
           boost::python::object value = items[i][1];
           boost::python::extract<std::string> k(key);
           boost::python::extract<int> v(value);
+          boost::python::extract<std::string> v_str(value);
+          boost::python::extract<NodeRef *> v_node(value);
+
           if (!k.check())
-            throw PyWASIMException(PyExc_RuntimeError, "Expecting str->int/str map in convert");
+            throw PyWASIMException(PyExc_RuntimeError, "Expecting str->int/str/NodeRef map in convert");
 
           if (v.check())
             vdict.emplace(k(), v());
-          else {
-            boost::python::extract<std::string> v_str(value);
-            if (!v_str.check())
-              throw PyWASIMException(PyExc_RuntimeError, "Expecting str->int/str map in convert");
+          else if (v_str.check())
             vdict.emplace(k(), v_str());
-          }
+          else if (v_node.check())
+            vdict.emplace(k(), v_node()->node );
+          else
+              throw PyWASIMException(PyExc_RuntimeError, "Expecting str->int/str/NodeRef map in convert");
       }
       auto ret_smt = sptr->convert(vdict);
       boost::python::dict ret;
@@ -1426,6 +1429,24 @@ namespace wasim {
       }
       sptr->init(var_assignment);
     }
+
+    void free_init(const boost::python::dict & d) {
+      smt::UnorderedTermMap var_assignment;
+      boost::python::list items = d.items();
+      for(ssize_t i = 0; i < len(items); ++i) {
+          boost::python::object key = items[i][0];
+          boost::python::object value = items[i][1];
+          boost::python::extract<NodeRef *> k(key);
+          boost::python::extract<NodeRef *> v(value);
+          if(k.check() && v.check())
+            var_assignment.emplace(k()->node, v()->node);
+          else
+            throw PyWASIMException(PyExc_RuntimeError, "Expecting Term->Term map in init");
+      }
+      sptr->free_init(var_assignment);
+    }
+
+
     /// re-assign the current state
     void set_current_state(const StateRef * s) { sptr->set_current_state(*(s->sptr.get())); }
     /// set the input variable values before simulating next step
@@ -1498,6 +1519,16 @@ namespace wasim {
         throw PyWASIMException(PyExc_RuntimeError, "Variable name `" + vname + "` already exists");
       }
     }
+
+    NodeRef * get_var(const std::string &vname) {
+      try {
+        auto t = sptr->get_solver()->get_symbol(vname);
+        return new NodeRef(t, sptr->get_solver());
+      } catch(...) {
+        throw PyWASIMException(PyExc_RuntimeError, "Variable name `" + vname + "` does not exists");
+      }
+    }
+
 
     /// get solver
     SolverRef * get_solver() const { return new SolverRef(sptr->get_solver()); }
@@ -1783,6 +1814,7 @@ BOOST_PYTHON_MODULE(pywasimbase)
     .def("convert", &Symsimulator::convert)
     .def("backtrack", &Symsimulator::backtrack)
     .def("init", &Symsimulator::init)
+    .def("free_init", &Symsimulator::free_init)
     .def("set_current_state", &Symsimulator::set_current_state)
     .def("set_input", &Symsimulator::set_input)
     .def("undo_set_input", &Symsimulator::undo_set_input)
@@ -1792,6 +1824,7 @@ BOOST_PYTHON_MODULE(pywasimbase)
     .def("get_Xs", &Symsimulator::get_Xs)
     .def("get_curr_state", &Symsimulator::get_curr_state, return_value_policy<manage_new_object>())
     .def("set_var", &Symsimulator::set_var, return_value_policy<manage_new_object>())
+    .def("get_var", &Symsimulator::get_var, return_value_policy<manage_new_object>())
     .def("get_solver", &Symsimulator::get_solver, return_value_policy<manage_new_object>())
   ;
 
