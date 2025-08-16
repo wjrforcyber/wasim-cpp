@@ -91,9 +91,15 @@ smt::UnorderedTermMap SymbolicSimulator::convert(
 
     if (std::holds_alternative<std::string>(value)) {
       auto value_str = std::get<std::string>(value);
-      auto key_sort = key_new->get_sort();
-      auto value_new = solver_->make_symbol(value_str, key_sort);
-      retdict.emplace(key_new, value_new);
+      try{
+        // allow assigning the same symbol value repeatedly
+        auto value_old = solver_->get_symbol(value_str);
+        retdict.emplace(key_new, value_old);
+      } catch (const std::exception & e) {
+        auto key_sort = key_new->get_sort();
+        auto value_new = solver_->make_symbol(value_str, key_sort);
+        retdict.emplace(key_new, value_new);
+      }
     } else if (std::holds_alternative<int>(value)) {
       auto value_int = std::get<int>(value);
       auto key_sort = key_new->get_sort();
