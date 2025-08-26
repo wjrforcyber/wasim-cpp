@@ -41,7 +41,7 @@ smt::Term SymbolicSimulator::cur(const std::string & n) const
   smt::Term expr = var(n);
   if (!_expr_only_sv(expr)) {
     assert(history_choice_.size() != 0);
-    assert(history_choice_.back().UsedInSim_);
+    assert(!history_choice_.back().UsedInSim_);
     smt::UnorderedTermMap iv_mapping = history_choice_.back().var_assign_;
     auto subs_mapping = sv_mapping;  // make a copy
     subs_mapping.insert(iv_mapping.begin(), iv_mapping.end());
@@ -94,6 +94,7 @@ smt::UnorderedTermMap SymbolicSimulator::convert(
       try{
         // allow assigning the same symbol value repeatedly
         auto value_old = solver_->get_symbol(value_str);
+        assert(key_new->get_sort() == value_old->get_sort());
         retdict.emplace(key_new, value_old);
       } catch (const std::exception & e) {
         auto key_sort = key_new->get_sort();
@@ -294,6 +295,20 @@ smt::Term SymbolicSimulator::interpret_state_expr_on_curr_frame(
 {
   if (!_expr_only_sv(expr))
     throw SimulatorException("expr should only contain only state variables");
+  const auto & prev_sv = trace_.back();
+  return solver_->substitute(expr, prev_sv);
+}
+
+smt::Term SymbolicSimulator::interpret_input_and_state_expr_on_curr_frame(
+    const smt::Term & expr, const smt::UnorderedTermMap & iv_map) const
+{
+  if (!_expr_only_sv(expr)){
+    const auto & sv_mapping = trace_.back();
+    assert(history_choice_.size() != 0);
+    auto subs_mapping = sv_mapping;  // make a copy
+    subs_mapping.insert(iv_map.begin(), iv_map.end());
+    return solver_->substitute(expr, subs_mapping);
+  }
   const auto & prev_sv = trace_.back();
   return solver_->substitute(expr, prev_sv);
 }

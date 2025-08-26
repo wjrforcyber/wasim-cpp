@@ -1486,6 +1486,23 @@ namespace wasim {
       return new NodeRef(sptr->interpret_state_expr_on_curr_frame(expr->node), sptr->get_solver());
     }
 
+    NodeRef * interpret_input_and_state_expr_on_curr_frame(NodeRef * expr, const boost::python::dict & iv_term_dict) const {
+      smt::UnorderedTermMap iv_map;
+      boost::python::list items = iv_term_dict.items();
+      for(ssize_t i = 0; i < len(items); ++i) {
+          boost::python::object key = items[i][0];
+          boost::python::object value = items[i][1];
+          boost::python::extract<NodeRef *> k(key);
+          boost::python::extract<NodeRef *> v(value);
+
+          if(k.check() && v.check())
+            iv_map.emplace(k()->node, v()->node);
+          else
+            throw PyWASIMException(PyExc_RuntimeError, "Expecting Term->Term map in interpret_input_and_state_expr_on_curr_frame");
+      }
+      return new NodeRef(sptr->interpret_input_and_state_expr_on_curr_frame(expr->node, iv_map), sptr->get_solver());
+    }
+
     /// do simulation
     void sim_one_step() { sptr->sim_one_step(); }
 
@@ -1820,6 +1837,8 @@ BOOST_PYTHON_MODULE(pywasimbase)
     .def("undo_set_input", &Symsimulator::undo_set_input)
 
     .def("interpret_state_expr_on_curr_frame", &Symsimulator::interpret_state_expr_on_curr_frame, return_value_policy<manage_new_object>() )
+    .def("interpret_input_and_state_expr_on_curr_frame", &Symsimulator::interpret_input_and_state_expr_on_curr_frame, return_value_policy<manage_new_object>() )
+    
     .def("sim_one_step", &Symsimulator::sim_one_step)
     .def("get_Xs", &Symsimulator::get_Xs)
     .def("get_curr_state", &Symsimulator::get_curr_state, return_value_policy<manage_new_object>())
