@@ -45,8 +45,9 @@ class Dut:
 
     def _create_iv_dict(self):
         iv_dict = {}
+        idx = str(self.step_cycle())
         for iv in self.inputvars_list:
-            iv_dict[iv.to_string()] = iv.to_string()+"X"+str(self.step_cycle()) # inputvar string dict
+            iv_dict[iv.to_string()] = iv.to_string()+ "X" + idx # inputvar string dict
         self.iv_term_dict = self.simulator.convert(iv_dict) # create default inputvars term dict
         self.iv_term_dict.update(self.iv_term_dict_default) # set default inputvars
 

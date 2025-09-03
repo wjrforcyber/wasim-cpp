@@ -22,11 +22,17 @@ class Dut:
         self.solver = self.simulator.get_solver()
         
         self._do_not_interpret_var = False # if true, will not return SignalProxy
-        self.iv_dict = {}
+        self.inputvars_list = self.ts.inputvars()
+        self.statevars_list = self.ts.statevars()
+
+        self.iv_term_dict = {}
+        self.iv_term_dict_comb = {}
+        self.iv_term_dict_default = {}
 
         self.initialized = False
         # self.prop = self._get_property()
 
+        self.combination = (len(self.statevars_list) == 0)    # comb -> True, seq -> False
 
     def _get_property(self):
         prop_list = self.ts.prop()
@@ -44,12 +50,21 @@ class Dut:
             print("property:", prop_i)
             return prop_i
 
+    def _create_iv_dict(self):
+        iv_dict = {}
+        idx = str(self.step_cycle())
+        for iv in self.inputvars_list:
+            iv_dict[iv.to_string()] = iv.to_string()+ "X" + idx # inputvar string dict
+        self.iv_term_dict = self.simulator.convert(iv_dict) # create default inputvars term dict
+        self.iv_term_dict.update(self.iv_term_dict_default) # set default inputvars
+
     def set_init(self, d = {}):
         if self.initialized:
-            raise RuntimeError("You cannot initialize simulator twice");
+            raise RuntimeError("You cannot initialize simulator twice")
         self.initialized = True
         var_dict = self.simulator.convert(d)
         self.simulator.init(var_dict)
+        self._create_iv_dict()  # create new inputvars
 
     def free_init(self, d = {}):
         if self.initialized:
@@ -57,17 +72,28 @@ class Dut:
         self.initialized = True
         var_dict = self.simulator.convert(d)
         self.simulator.free_init(var_dict)
+        self._create_iv_dict()  # create new inputvars
 
-    def step(self):
-        var_dict = self.simulator.convert(self.iv_dict)
-        self.iv_dict = {}
-        self.simulator.set_input(var_dict, [])
-        self.simulator.sim_one_step()
+    def step(self, num = 1, asmpt = []):
+        for _ in range(num):
+            self.iv_term_dict.update(self.iv_term_dict_default) # set default inputvars again, avoid default input vars changed
+            self.simulator.set_input(self.iv_term_dict, asmpt)
+            self.simulator.sim_one_step()
+            self._create_iv_dict()  # create new inputvars
         print (f'<cycle:{self.step_cycle()-1}>')
+
+    def comb(self, num = 1, asmpt = []):
+        for _ in range(num):
+            self.iv_term_dict.update(self.iv_term_dict_default)
+            self.simulator.set_input(self.iv_term_dict, asmpt)
+            self.simulator.sim_one_step()
+            self.iv_term_dict_comb = self.iv_term_dict  # storage comb inputvars for interpret_input_and_state_expr_on_curr_frame
+            self._create_iv_dict()  # create new inputvars
 
     def back_step(self):
         self.simulator.backtrack()
         self.simulator.undo_set_input()
+        self._create_iv_dict()  # create new inputvars
 
     def step_cycle(self):
         return self.simulator.tracelen()
@@ -160,14 +186,21 @@ class SignalProxy:
     @property
     def value(self):
         # if you have assigned, get the one you assigned
-        if self.name in self.dut.iv_dict:
-            return self.dut.iv_dict[self.name]
+        nf = self.dut.simulator.var(self.name)
+        if nf in self.dut.iv_term_dict:
+            return self.dut.iv_term_dict[nf]
+        
         # get current term of signal
         try:
-            signal_nr = self.dut.simulator.cur(self.name)
+            signal_nr = self.dut.simulator.interpret_state_expr_on_curr_frame(nf)   # only have state vars
             return signal_nr
-        except Exception as e:
-            raise ValueError(f"Cannot get value of signal '{self.name}': {e}")
+        except Exception:
+            if(self.dut.combination):
+                signal_nr = self.dut.simulator.interpret_input_and_state_expr_on_curr_frame(nf, self.dut.iv_term_dict_comb)
+            else:
+                signal_nr = self.dut.simulator.interpret_input_and_state_expr_on_curr_frame(nf, self.dut.iv_term_dict)  # have state vars and input vars
+                print(f"Warning: expr(dut.{self.name}.value) contains current inputvars; Modifying related inputvars afterward may cause (dut.{self.name}.value) changed.")
+            return signal_nr
 
     @value.setter
     def value(self, iv):
@@ -175,17 +208,40 @@ class SignalProxy:
         try:
             iv_nr = self.dut.simulator.var(self.name)
             if self.dut.ts.is_input_var(iv_nr):
-                self.dut.iv_dict[self.name] = iv
+                iv_dict = self.dut.simulator.convert({self.name : iv})
+                self.dut.iv_term_dict.update(iv_dict)
             else:
                 raise ValueError(f"No such input variable '{self.name}'.")
         except Exception as e:
             raise ValueError(f"No such variable '{self.name}'.", e)
-            
+
     def unset(self):
-        if self.name not in self.dut.iv_dict:
+        iv_nr = self.dut.simulator.var(self.name)
+        if iv_nr not in self.dut.iv_term_dict:
             raise ValueError(f"No such assignment to variable '{self.name}'.")
-        del self.dut.iv_dict[self.name]
+        del self.dut.iv_term_dict[iv_nr]
+
+    @property
+    def value_def(self):
+        return None
+
+    @value_def.setter
+    def value_def(self, iv):
+        try:
+            iv_nr = self.dut.simulator.var(self.name)
+            if self.dut.ts.is_input_var(iv_nr):
+                iv_dict = self.dut.simulator.convert({self.name : iv})
+                self.dut.iv_term_dict_default.update(iv_dict)
+            else:
+                raise ValueError(f"No such input variable '{self.name}'.")
+        except Exception as e:
+            raise ValueError(f"No such variable '{self.name}'.", e)
         
+    def unset_def(self):
+        iv_nr = self.dut.simulator.var(self.name)
+        if iv_nr not in self.dut.iv_term_dict_default:
+            raise ValueError(f"No such default assignment to variable '{self.name}'.")
+        del self.dut.iv_term_dict_default[iv_nr]
 
 
 class async_simulator(object):
@@ -449,7 +505,7 @@ def async_one_step(sim, dut):
         elif st.await_cond.cond is not None:
             # check if this condition can be true
             # check if this condition can be false
-            cond_curr = dut.simulator.interpret_state_expr_on_curr_frame(st.await_cond.cond)
+            cond_curr = dut.simulator.interpret_input_and_state_expr_on_curr_frame(st.await_cond.cond, dut.iv_term_dict)
             maybe_true = dut.check_sat(cond_curr, st.branch_cond )
             maybe_false = dut.check_sat(~cond_curr, st.branch_cond )
             print('branch:',maybe_true, maybe_false)
