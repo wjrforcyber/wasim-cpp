@@ -19,7 +19,6 @@ class Dut:
         self.statevars_list = self.ts.statevars()
 
         self.iv_term_dict = {}
-        self.iv_term_dict_comb = {}
         self.iv_term_dict_default = {}
 
         self.initialized = False
@@ -72,14 +71,6 @@ class Dut:
             self.iv_term_dict.update(self.iv_term_dict_default) # set default inputvars again, avoid default input vars changed
             self.simulator.set_input(self.iv_term_dict, asmpt)
             self.simulator.sim_one_step()
-            self._create_iv_dict()  # create new inputvars
-
-    def comb(self, num = 1, asmpt = []):
-        for _ in range(num):
-            self.iv_term_dict.update(self.iv_term_dict_default)
-            self.simulator.set_input(self.iv_term_dict, asmpt)
-            self.simulator.sim_one_step()
-            self.iv_term_dict_comb = self.iv_term_dict  # storage comb inputvars for interpret_input_and_state_expr_on_curr_frame
             self._create_iv_dict()  # create new inputvars
 
     def back_step(self):
@@ -169,7 +160,7 @@ class SignalProxy:
             return signal_nr
         except Exception:
             if(self.dut.combination):
-                signal_nr = self.dut.simulator.interpret_input_and_state_expr_on_curr_frame(nf, self.dut.iv_term_dict_comb)
+                signal_nr = nf.substitute(self.dut.iv_term_dict)    # only have input vars
             else:
                 signal_nr = self.dut.simulator.interpret_input_and_state_expr_on_curr_frame(nf, self.dut.iv_term_dict)  # have state vars and input vars
                 print(f"Warning: expr(dut.{self.name}.value) contains current inputvars; Modifying related inputvars afterward may cause (dut.{self.name}.value) changed.")
