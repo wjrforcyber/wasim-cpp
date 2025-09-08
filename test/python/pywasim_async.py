@@ -78,10 +78,10 @@ class Dut:
         self.constraints.append(constr)
     
     def unset_constraint(self, constr):
-        del self.constraints[constr]
+        self.constraints.remove(constr)
 
     def clear_constraint(self):
-        self.constraints = []
+        self.constraints.clear()
 
     def step(self, num = 1, asmpt = []):
         for _ in range(num):
