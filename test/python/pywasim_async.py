@@ -27,6 +27,7 @@ class Dut:
 
         self.iv_term_dict = {}
         self.iv_term_dict_default = {}
+        self.constraints = []
 
         self.initialized = False
         # self.prop = self._get_property()
@@ -73,6 +74,15 @@ class Dut:
         self.simulator.free_init(var_dict)
         self._create_iv_dict()  # create new inputvars
 
+    def set_constraint(self, constr):
+        self.constraints.append(constr)
+    
+    def unset_constraint(self, constr):
+        del self.constraints[constr]
+
+    def clear_constraint(self):
+        self.constraints = []
+
     def step(self, num = 1, asmpt = []):
         for _ in range(num):
             self.iv_term_dict.update(self.iv_term_dict_default) # set default inputvars again, avoid default input vars changed
@@ -114,6 +124,7 @@ class Dut:
         print('dut.check_sat')
         asmpts_all = self.simulator.all_assumptions()
         asmpts_all.extend(asmpts)
+        asmpts_all.extend(self.constraints)
         asmpts_all.append(asst)
         return self.solver.check_sat_assuming(asmpts_all)
 

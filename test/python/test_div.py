@@ -12,7 +12,8 @@ def run1(sim, dut, pywasim):  #
     dut.divisor.value = "divisor"
     dut.start.value = 1
     dut.rst.value_def = 0
-    dut.step(asmpt = [dut.divisor.value != 0])
+    dut.set_constraint(dut.divisor.value != 0)
+    sim.wait_cycle()
 
     # pull start down, wait condition
     dut.start.value_def = 0
